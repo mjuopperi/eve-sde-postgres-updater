@@ -1,0 +1,11 @@
+version: '3.9'
+services :
+  eve_sde_db:
+    image: postgres:13-alpine
+    container_name: eve_sde_db
+    ports:
+      - "5433:5432" # Non-standard 5433 port to not clash with your own db
+    environment:
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev
+      POSTGRES_DB: sde
