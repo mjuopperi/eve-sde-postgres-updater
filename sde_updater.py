@@ -84,6 +84,25 @@ def decompressed(bz2_file_path: str) -> str:
         yield file.name
 
 
+def _prepare_database():
+    # Recreates the database with template0 to avoid any conflicts
+    # https://www.postgresql.org/docs/9.2/app-pgrestore.html#APP-PGRESTORE-EXAMPLES
+
+    docker_executable = os.getenv("DOCKER_EXECUTABLE")
+    sde_container_name = os.getenv("SDE_CONTAINER_NAME")
+    sde_db_username = os.getenv("SDE_DB_USERNAME")
+    sde_db_name = os.getenv("SDE_DB_NAME")
+
+    drop_command = f"dropdb -U {sde_db_username} --if-exists {sde_db_name}"
+    create_command = f"createdb -U {sde_db_username} -T template0 {sde_db_name}"
+    if docker_executable:
+        drop_command = f"{docker_executable} exec -i {sde_container_name} " + drop_command
+        create_command = f"{docker_executable} exec -i {sde_container_name} " + create_command
+
+    subprocess.run(drop_command, shell=True)
+    subprocess.run(create_command, shell=True)
+
+
 def restore_dump(dump_file: str) -> None:
     with decompressed(dump_file) as dump:
         docker_executable = os.getenv("DOCKER_EXECUTABLE")
@@ -91,8 +110,7 @@ def restore_dump(dump_file: str) -> None:
         sde_db_username = os.getenv("SDE_DB_USERNAME")
         sde_db_name = os.getenv("SDE_DB_NAME")
 
-        restore_cmd = f"pg_restore -c -C -U {sde_db_username} -v -d {sde_db_name} < {dump}"
-
+        restore_cmd = f"pg_restore --no-owner -U {sde_db_username} -v -d {sde_db_name} < {dump}"
         if docker_executable:
             restore_cmd = f"{docker_executable} exec -i {sde_container_name} " + restore_cmd
 
