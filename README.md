@@ -32,6 +32,9 @@ Make a copy of `.env.template` and save it as `.env`. Change settings as needed 
 
     ./sde_updater.sh
 
+### Scheduling
 
+The script keeps track of update history in `.update.log` and checks the latest entry against the "last-modified" header
+of the Fuzzwork dumps. The databse is only updated if the dump is newer than your local version.
 
-
+You can use `cron` or other scheduling tools to prediodically run this script to keep your database up to date.
