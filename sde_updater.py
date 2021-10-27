@@ -1,5 +1,6 @@
 import os
 import contextlib
+import sys
 import tempfile
 import subprocess
 from bz2 import BZ2File
@@ -84,15 +85,9 @@ def decompressed(bz2_file_path: str) -> str:
         yield file.name
 
 
-def _prepare_database():
+def _prepare_database(docker_executable: str, sde_container_name: str, sde_db_username: str, sde_db_name: str):
     # Recreates the database with template0 to avoid any conflicts
     # https://www.postgresql.org/docs/9.2/app-pgrestore.html#APP-PGRESTORE-EXAMPLES
-
-    docker_executable = os.getenv("DOCKER_EXECUTABLE")
-    sde_container_name = os.getenv("SDE_CONTAINER_NAME")
-    sde_db_username = os.getenv("SDE_DB_USERNAME")
-    sde_db_name = os.getenv("SDE_DB_NAME")
-
     drop_command = f"dropdb -U {sde_db_username} --if-exists {sde_db_name}"
     create_command = f"createdb -U {sde_db_username} -T template0 {sde_db_name}"
     if docker_executable:
@@ -114,5 +109,12 @@ def restore_dump(dump_file: str) -> None:
         if docker_executable:
             restore_cmd = f"{docker_executable} exec -i {sde_container_name} " + restore_cmd
 
-        subprocess.run(restore_cmd, shell=True)
-        set_update_timestamp()
+        try:
+            _prepare_database(docker_executable, sde_container_name, sde_db_username, sde_db_name)
+            subprocess.run(restore_cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            set_update_timestamp()
+            print("Database dump restored succesfully!")
+        except subprocess.CalledProcessError as e:
+            print("--- FAILED TO RESTORE DUMP ---", file=sys.stderr)
+            print(f"Error output:\n{e.stdout.decode('utf-8')}\n{e.stderr.decode('utf-8')}", file=sys.stderr)
+            exit(e.returncode)
