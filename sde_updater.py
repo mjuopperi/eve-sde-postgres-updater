@@ -46,8 +46,10 @@ def set_update_timestamp() -> None:
         update_log.write(f"{timestamp}\n")
 
 
-def get_dump_timestamp() -> datetime:
-    res = httpx.head(os.getenv("DB_DUMP_URL"))
+def get_dump_timestamp(dump_url: Optional[str] = None) -> datetime:
+    if not dump_url:
+        dump_url = os.getenv("DB_DUMP_URL")
+    res = httpx.head(dump_url)
     last_modified_header = res.headers.get("Last-Modified")
     if not last_modified_header:
         raise Exception("Last-Modified header missing.")
@@ -58,6 +60,13 @@ def is_out_of_date() -> bool:
     last_updated = get_last_update_timestamp()
     dump_timestamp = get_dump_timestamp()
     return last_updated < dump_timestamp
+
+
+def get_dump_checksum(dump_url: str) -> Optional[str]:
+    checksum_url = f"{dump_url}.md5"
+    res = httpx.get(checksum_url)
+    if res.status_code == 200:
+        return res.text.split()[0] if res.text else None
 
 
 @contextlib.contextmanager
