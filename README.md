@@ -91,7 +91,7 @@ create extension postgres_fdw;
 -- Create foreign server. "eve_sde_db" host is using docker networking.
 create server sde_db foreign data wrapper postgres_fdw options (host 'eve_sde_db', port '5432', dbname 'sde');
 -- Setup remote user
-create user mapping for dev server sde_db options (user 'dev', password 'dev');
+create user mapping for dev server sde_db options (user 'postgres', password 'postgres');
 
 -- Create local schema
 create schema evesde;
