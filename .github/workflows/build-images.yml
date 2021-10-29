@@ -1,5 +1,14 @@
 name: Build SDE images
-on: [push] # TODO: Schedule
+on:
+  workflow_dispatch:
+    inputs:
+      date-tag:
+        description: "Dump timestamp. e.g. 2021-10-13_17-31"
+        required: true
+      checksum-tag:
+        description: "Dump md5 checksum"
+        required: true
+
 jobs:
   build-images:
     name: Build images
@@ -54,3 +63,5 @@ jobs:
           push: true
           tags: |
             mjuopperi/eve_sde:latest${{ matrix.tag-suffix }}
+            mjuopperi/eve_sde:${{ github.event.inputs.date-tag }}${{ matrix.tag-suffix }}
+            mjuopperi/eve_sde:${{ github.event.inputs.checksum-tag }}${{ matrix.tag-suffix }}
