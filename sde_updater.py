@@ -8,7 +8,7 @@ from typing import Optional
 
 from dateutil import parser
 from datetime import datetime, timezone
-import httpx
+import requests
 from tqdm import tqdm
 
 
@@ -49,7 +49,7 @@ def set_update_timestamp() -> None:
 def get_dump_timestamp(dump_url: Optional[str] = None) -> datetime:
     if not dump_url:
         dump_url = os.getenv("DB_DUMP_URL")
-    res = httpx.head(dump_url)
+    res = requests.head(dump_url)
     last_modified_header = res.headers.get("Last-Modified")
     if not last_modified_header:
         raise Exception("Last-Modified header missing.")
@@ -64,7 +64,7 @@ def is_out_of_date() -> bool:
 
 def get_dump_checksum(dump_url: str) -> Optional[str]:
     checksum_url = f"{dump_url}.md5"
-    res = httpx.get(checksum_url)
+    res = requests.get(checksum_url)
     if res.status_code == 200:
         return res.text.split()[0] if res.text else None
 
@@ -72,15 +72,13 @@ def get_dump_checksum(dump_url: str) -> Optional[str]:
 @contextlib.contextmanager
 def download_dump() -> str:
     with tempfile.NamedTemporaryFile(suffix=".dmp.bz2") as download_file:
-        with httpx.stream("GET", os.getenv("DB_DUMP_URL"), headers={"Accept-Encoding": "identity"}) as response:
-            total = int(response.headers["Content-Length"])
-
-            with tqdm(total=total, unit_scale=True, unit_divisor=1024, unit="B") as progress:
-                num_bytes_downloaded = response.num_bytes_downloaded
-                for chunk in response.iter_bytes():
+        with requests.get(os.getenv("DB_DUMP_URL"), stream=True) as response:
+            with tqdm(unit_scale=True, unit_divisor=1024, unit="B") as progress:
+                num_bytes_downloaded = 0
+                for chunk in response.iter_content(chunk_size=8192):
                     download_file.write(chunk)
-                    progress.update(response.num_bytes_downloaded - num_bytes_downloaded)
-                    num_bytes_downloaded = response.num_bytes_downloaded
+                    progress.update(len(chunk) - num_bytes_downloaded)
+                    num_bytes_downloaded = len(chunk)
 
             yield download_file.name
 

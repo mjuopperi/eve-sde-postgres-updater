@@ -7,9 +7,9 @@ verify_ssl = true
 
 [packages]
 python-dateutil = "*"
-httpx = "*"
 tqdm = "*"
 python-dotenv = "*"
+requests = "*"
 
 [requires]
 python_version = "3.12"
