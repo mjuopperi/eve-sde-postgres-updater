@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v1
 
       - name: Start env
-        run: docker-compose up -d
+        run: docker compose up -d
 
       - name: Install dependencies
         run: pipenv install
@@ -43,8 +43,8 @@ jobs:
 
       - name: Move db from host to image
         run: |
-          docker-compose exec -T eve_sde_db mkdir /data
-          docker-compose exec -T eve_sde_db sh -c "cp -r /var/lib/postgresql/data/* /data"
+          docker compose exec -T eve_sde_db mkdir /data
+          docker compose exec -T eve_sde_db sh -c "cp -r /var/lib/postgresql/data/* /data"
 
       - name: Commit to image
         run: docker commit eve_sde_db eve_sde_build
